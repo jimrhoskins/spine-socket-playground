@@ -1,0 +1,19 @@
+!!!5
+html
+  head
+    title Test
+    script(src="/socket.io/socket.io.js")
+    script(src="/application.js")
+    link(rel="stylesheet", href="/application.css")
+    :coffeescript
+      $ = require('jqueryify')
+      $ =>
+        App = require 'index'
+        @app = new App el: $('body')
+
+        @App = App
+  body
+    h1 Hello
+    #list
+    a#new.btn.primary New
+    #edit

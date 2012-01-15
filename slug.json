@@ -1,0 +1,17 @@
+{
+  "dependencies": [
+    "es5-shimify", 
+    "json2ify", 
+    "jqueryify", 
+    "socket.io-client/dist/socket.io", 
+    "spine",
+    "spine/lib/local",
+    "spine/lib/ajax",
+    "spine/lib/route",
+    "spine/lib/tmpl",
+    "spine/lib/list",
+    "spine/lib/manager"
+  ],
+  "libs": [],
+  "paths": ["./app"]
+}

@@ -1,0 +1,7 @@
+<form>
+<input name="name" value="<%= @name %>">
+<input type="submit" class="primary btn" value="Save" >
+<% unless @isNew(): %>
+<a class="btn danger destroy">Delete</a>
+<% end %>
+</form>
