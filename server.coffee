@@ -3,7 +3,9 @@ express = require 'express'
 hemConnect = require './hemConnect'
 lessConnect = require './lessConnect'
 
+global.window = {}
 Spine = require 'spine'
+delete global.window
 
 
 app = express.createServer()
@@ -30,31 +32,47 @@ app.get '/', (req, res) ->
 SocketServer = 
   extended: ->
 
-  connect: (@io) -> 
-    console.log 'CONNECttt'
-    @io.sockets.on 'connection', @proxy(@onConnect)
+  connect: (@io, options={}) -> 
+    if options.autoConnect
+      @io.sockets.on 'connection', @proxy(@onConnect)
+    @sockets = []
 
   onConnect: (socket) ->
-    console.log 'Socket Connection!'
+    if @room
+      console.log 'Joined', @room
+      socket.join @room
+
+    @sockets.push socket
+
+    socket.on 'disconnect', =>
+      @sockets = (s for s in @sockets when s isnt socket)
 
     socket.on "Spine:#{@className}:create", (instance) =>
       console.log "CREATE", instance
-      socket.broadcast.emit "Spine:#{@className}:create", instance
+      @socketBroadcast socket, "Spine:#{@className}:create", instance
       @create instance
 
     socket.on "Spine:#{@className}:update", (instance) =>
       console.log "UPDATE", instance
-      socket.broadcast.emit "Spine:#{@className}:update", instance
-      @find(instance.id).updateAttributes instance
+      @socketBroadcast socket, "Spine:#{@className}:update", instance
+      @exists(instance.id)?.updateAttributes instance
 
     socket.on "Spine:#{@className}:destroy", (instance) =>
       console.log "DESTROY", instance
-      socket.broadcast.emit "Spine:#{@className}:destroy", instance
-      @find(instance.id).destroy()
+      @socketBroadcast socket, "Spine:#{@className}:destroy", instance
+      @exists(instance.id)?.destroy()
 
     socket.on "Spine:#{@className}:fetch", (callback) =>
       console.log "FETCH", @all().toString()
       callback @all()
+
+  socketEmit: (event, args...) ->
+    @io.sockets.in(@room).emit(event, args...)
+
+
+  socketBroadcast: (socket, event, args...) ->
+    socket.broadcast.to(@room).emit(event, args...)
+    console.log "broadcast", @room, event, args
 
 fs = require 'fs'
 FileSave = 
@@ -82,15 +100,35 @@ class Player extends Spine.Model
   @extend FileSave
 
 
+
 Player.fetch()
 Player.connect io
 
 
 
+namespace = (klass, name) ->
+  name ?= "f#{Math.random()}"
+
+  class Clone extends klass
+    @configure @className, @attributes...
+    @room = name
 
 
+open = null
 
+id = "A"
 
+io.sockets.on 'connection', (socket) ->
+  if open and open.sockets.length < 2
+    open.onConnect socket
+    console.log 'Connected to ', open.room
+  else
+    console.log "FOOOP", open?.sockets?.length
+    open = namespace Player, id
+    open.connect io
+    open.onConnect socket
+    console.log 'Created ', open.room
+    id = id + "A"
 
 
 
