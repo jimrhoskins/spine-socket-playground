@@ -1,7 +1,9 @@
 require 'coffee-script'
 express = require 'express'
-hemConnect = require './hemConnect'
-lessConnect = require './lessConnect'
+hem = require './lib/connect-hem'
+less = require './lib/connect-less'
+SocketServer = require './lib/socket-server.spine'
+FileSave = require './lib/file.spine'
 
 global.window = {}
 Spine = require 'spine'
@@ -14,10 +16,10 @@ io = require('socket.io').listen(app)
 app.configure ->
   app.set 'views', "#{__dirname}/views"
 
-  app.use hemConnect
+  app.use hem
     slugFile: "#{__dirname}/slug.json"
 
-  app.use '/application.css', lessConnect
+  app.use '/application.css', less
     source: "#{__dirname}/less/bootstrap.less"
     paths: ["#{__dirname}/less"]
 
@@ -28,70 +30,6 @@ app.get '/', (req, res) ->
 
 
 
-
-SocketServer = 
-  extended: ->
-
-  connect: (@io, options={}) -> 
-    if options.autoConnect
-      @io.sockets.on 'connection', @proxy(@onConnect)
-    @sockets = []
-
-  onConnect: (socket) ->
-    if @room
-      console.log 'Joined', @room
-      socket.join @room
-
-    @sockets.push socket
-
-    socket.on 'disconnect', =>
-      @sockets = (s for s in @sockets when s isnt socket)
-
-    socket.on "Spine:#{@className}:create", (instance) =>
-      console.log "CREATE", instance
-      @socketBroadcast socket, "Spine:#{@className}:create", instance
-      @create instance
-
-    socket.on "Spine:#{@className}:update", (instance) =>
-      console.log "UPDATE", instance
-      @socketBroadcast socket, "Spine:#{@className}:update", instance
-      @exists(instance.id)?.updateAttributes instance
-
-    socket.on "Spine:#{@className}:destroy", (instance) =>
-      console.log "DESTROY", instance
-      @socketBroadcast socket, "Spine:#{@className}:destroy", instance
-      @exists(instance.id)?.destroy()
-
-    socket.on "Spine:#{@className}:fetch", (callback) =>
-      console.log "FETCH", @all().toString()
-      callback @all()
-
-  socketEmit: (event, args...) ->
-    @io.sockets.in(@room).emit(event, args...)
-
-
-  socketBroadcast: (socket, event, args...) ->
-    socket.broadcast.to(@room).emit(event, args...)
-    console.log "broadcast", @room, event, args
-
-fs = require 'fs'
-FileSave = 
-  extended: ->
-    @change @changeLocal
-    @fetch @fetchLocal
-    @file ?= "#{@className}.json"
-
-  changeLocal: ->
-    data = JSON.stringify(@)
-    fs.writeFile @file, data
-
-
-  fetchLocal: ->
-    fs.readFile @file, (err, data) =>
-      if err
-        console.log "Read Error"
-        return
-      @refresh data.toString() , clear: true
 
 
 class Player extends Spine.Model
@@ -129,20 +67,6 @@ io.sockets.on 'connection', (socket) ->
     open.onConnect socket
     console.log 'Created ', open.room
     id = id + "A"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

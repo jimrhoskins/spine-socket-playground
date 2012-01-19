@@ -10,7 +10,7 @@
     "es5-shimify": "~0.0.1",
     "json2ify": "~0.0.1",
     "jqueryify": "~0.0.1",
-    "spine": "1.0.6",
+    "spine": "https://github.com/jimrhoskins/spine/tarball/master",
     "coffee-script": "*",
     "express": "*",
     "jade": "*",

@@ -29,3 +29,4 @@ module.exports = (options = {}) ->
       return serveJavaScript req, res, next
     next()
 
+
